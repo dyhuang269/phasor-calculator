@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AC Phasor Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --panel: #0f1628;
+    --border: #1e3a5f;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #39ff14;
+    --text: #c8d8e8;
+    --text-dim: #4a6080;
+    --glow: 0 0 12px rgba(0,212,255,0.4);
+    --glow2: 0 0 12px rgba(255,107,53,0.4);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    min-height: 100vh;
+    padding: 20px;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 20%, rgba(0,212,255,0.05) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 30% at 80% 80%, rgba(255,107,53,0.04) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 28px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--accent);
+    text-shadow: var(--glow);
+  }
+
+  header p {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    margin-top: 4px;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  /* MODE TOGGLE */
+  .mode-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .mode-tab {
+    flex: 1;
+    padding: 10px;
+    background: var(--panel);
+    border: none;
+    color: var(--text-dim);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+
+  .mode-tab.active {
+    background: rgba(0,212,255,0.12);
+    color: var(--accent);
+    box-shadow: inset 0 -2px 0 var(--accent);
+  }
+
+  /* PANELS */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .panel-title {
+    font-size: 0.75rem;
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* INPUT FORMAT TOGGLE */
+  .fmt-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    align-items: center;
+  }
+
+  .fmt-toggle span {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  .fmt-btn {
+    padding: 4px 14px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: transparent;
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .fmt-btn.active {
+    border-color: var(--accent2);
+    color: var(--accent2);
+    background: rgba(255,107,53,0.08);
+    box-shadow: var(--glow2);
+  }
+
+  /* INPUT ROWS */
+  .input-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+  }
+
+  .input-group {
+    flex: 1;
+  }
+
+  .input-group label {
+    display: block;
+    font-size: 0.75rem;
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+  }
+
+  .input-group input {
+    width: 100%;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 9px 12px;
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .input-group input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(0,212,255,0.1);
+  }
+
+  .op-selector {
+    display: flex;
+    gap: 6px;
+    margin: 14px 0;
+  }
+
+  .op-btn {
+    flex: 1;
+    padding: 8px 4px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .op-btn.active {
+    border-color: var(--accent3);
+    color: var(--accent3);
+    background: rgba(57,255,20,0.08);
+    box-shadow: 0 0 10px rgba(57,255,20,0.2);
+  }
+
+  .calc-btn {
+    width: 100%;
+    margin-top: 14px;
+    padding: 12px;
+    background: transparent;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    color: var(--accent);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .calc-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.25s ease;
+    z-index: -1;
+  }
+
+  .calc-btn:hover { color: var(--bg); }
+  .calc-btn:hover::before { transform: scaleX(1); }
+
+  /* RESULT */
+  .result-panel {
+    background: rgba(0,0,0,0.5);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 18px;
+    margin-top: 16px;
+    min-height: 80px;
+    display: none;
+  }
+
+  .result-panel.visible { display: block; }
+
+  .result-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    letter-spacing: 3px;
+    margin-bottom: 12px;
+  }
+
+  .result-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .result-card {
+    flex: 1;
+    min-width: 180px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px 16px;
+  }
+
+  .result-card-label {
+    font-size: 0.7rem;
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+
+  .result-value {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.1rem;
+    color: var(--accent3);
+    text-shadow: 0 0 8px rgba(57,255,20,0.4);
+    word-break: break-all;
+  }
+
+  .result-sub {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  .error-msg {
+    color: var(--accent2);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.85rem;
+    text-shadow: var(--glow2);
+  }
+
+  /* FORMULA HINT */
+  .hint {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-top: 8px;
+    letter-spacing: 1px;
+  }
+
+  .separator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 12px 0;
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+  }
+  .separator::before, .separator::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* PHASOR DIAGRAM */
+  .diagram-wrap {
+    margin-top: 16px;
+    display: none;
+    justify-content: center;
+  }
+  .diagram-wrap.visible { display: flex; }
+
+  canvas {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: rgba(0,0,0,0.6);
+  }
+
+  @media (max-width: 600px) {
+    header h1 { font-size: 1.4rem; }
+    .result-card { min-width: 140px; }
+    .input-row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>⚡ Phasor Calculator</h1>
+    <p>// AC Circuit Complex Number Analysis //</p>
+  </header>
+
+  <!-- MODE TABS -->
+  <div class="mode-tabs">
+    <button class="mode-tab active" onclick="setMode('single')">單一輸入 · 座標轉換</button>
+    <button class="mode-tab" onclick="setMode('dual')">雙輸入 · 四則運算</button>
+  </div>
+
+  <!-- ======== SINGLE MODE ======== -->
+  <div id="single-mode">
+    <div class="panel">
+      <div class="panel-title">// INPUT FORMAT</div>
+      <div class="fmt-toggle">
+        <span>FORMAT:</span>
+        <button class="fmt-btn active" onclick="setSingleFmt('cart', this)">卡氏 a+jb</button>
+        <button class="fmt-btn" onclick="setSingleFmt('polar', this)">極座標 r∠θ°</button>
+      </div>
+      <div id="single-cart">
+        <div class="input-row">
+          <div class="input-group">
+            <label>REAL PART (a)</label>
+            <input type="number" id="s-real" placeholder="0" step="any">
+          </div>
+          <div class="input-group">
+            <label>IMAG PART (b)</label>
+            <input type="number" id="s-imag" placeholder="0" step="any">
+          </div>
+        </div>
+        <p class="hint">→ 輸入 a + jb</p>
+      </div>
+      <div id="single-polar" style="display:none">
+        <div class="input-row">
+          <div class="input-group">
+            <label>MAGNITUDE (r)</label>
+            <input type="number" id="s-mag" placeholder="1" step="any" min="0">
+          </div>
+          <div class="input-group">
+            <label>ANGLE θ (degrees)</label>
+            <input type="number" id="s-ang" placeholder="0" step="any">
+          </div>
+        </div>
+        <p class="hint">→ 輸入 r∠θ°</p>
+      </div>
+      <button class="calc-btn" onclick="calcSingle()">CONVERT →</button>
+    </div>
+
+    <div id="single-result" class="result-panel">
+      <div class="result-title">// OUTPUT</div>
+      <div id="single-output"></div>
+    </div>
+    <div id="single-diagram" class="diagram-wrap">
+      <canvas id="canvas-single" width="320" height="320"></canvas>
+    </div>
+  </div>
+
+  <!-- ======== DUAL MODE ======== -->
+  <div id="dual-mode" style="display:none">
+    <div class="panel">
+      <div class="panel-title">// OPERAND A</div>
+      <div class="fmt-toggle">
+        <span>FORMAT:</span>
+        <button class="fmt-btn active" id="a-cart-btn" onclick="setDualFmt('a','cart')">卡氏 a+jb</button>
+        <button class="fmt-btn" id="a-polar-btn" onclick="setDualFmt('a','polar')">極座標 r∠θ°</button>
+      </div>
+      <div id="dual-a-cart">
+        <div class="input-row">
+          <div class="input-group"><label>REAL (a)</label><input type="number" id="a-real" placeholder="0" step="any"></div>
+          <div class="input-group"><label>IMAG (b)</label><input type="number" id="a-imag" placeholder="0" step="any"></div>
+        </div>
+      </div>
+      <div id="dual-a-polar" style="display:none">
+        <div class="input-row">
+          <div class="input-group"><label>MAGNITUDE (r)</label><input type="number" id="a-mag" placeholder="1" step="any" min="0"></div>
+          <div class="input-group"><label>ANGLE θ°</label><input type="number" id="a-ang" placeholder="0" step="any"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPERATOR -->
+    <div class="panel" style="padding:14px 20px">
+      <div class="panel-title">// OPERATION</div>
+      <div class="op-selector">
+        <button class="op-btn active" id="op-add" onclick="setOp('+')">＋</button>
+        <button class="op-btn" id="op-sub" onclick="setOp('−')">－</button>
+        <button class="op-btn" id="op-mul" onclick="setOp('×')">×</button>
+        <button class="op-btn" id="op-div" onclick="setOp('÷')">÷</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">// OPERAND B</div>
+      <div class="fmt-toggle">
+        <span>FORMAT:</span>
+        <button class="fmt-btn active" id="b-cart-btn" onclick="setDualFmt('b','cart')">卡氏 a+jb</button>
+        <button class="fmt-btn" id="b-polar-btn" onclick="setDualFmt('b','polar')">極座標 r∠θ°</button>
+      </div>
+      <div id="dual-b-cart">
+        <div class="input-row">
+          <div class="input-group"><label>REAL (a)</label><input type="number" id="b-real" placeholder="0" step="any"></div>
+          <div class="input-group"><label>IMAG (b)</label><input type="number" id="b-imag" placeholder="0" step="any"></div>
+        </div>
+      </div>
+      <div id="dual-b-polar" style="display:none">
+        <div class="input-row">
+          <div class="input-group"><label>MAGNITUDE (r)</label><input type="number" id="b-mag" placeholder="1" step="any" min="0"></div>
+          <div class="input-group"><label>ANGLE θ°</label><input type="number" id="b-ang" placeholder="0" step="any"></div>
+        </div>
+      </div>
+    </div>
+
+    <button class="calc-btn" onclick="calcDual()">CALCULATE →</button>
+
+    <div id="dual-result" class="result-panel">
+      <div class="result-title">// RESULT</div>
+      <div id="dual-output"></div>
+    </div>
+    <div id="dual-diagram" class="diagram-wrap">
+      <canvas id="canvas-dual" width="320" height="320"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────
+let currentMode = 'single';
+let singleFmt = 'cart';
+let dualFmtA = 'cart', dualFmtB = 'cart';
+let currentOp = '+';
+
+// ─── Complex math ────────────────────────────────────────
+const C = {
+  add: (a, b) => ({ re: a.re + b.re, im: a.im + b.im }),
+  sub: (a, b) => ({ re: a.re - b.re, im: a.im - b.im }),
+  mul: (a, b) => ({ re: a.re*b.re - a.im*b.im, im: a.re*b.im + a.im*b.re }),
+  div: (a, b) => {
+    const d = b.re*b.re + b.im*b.im;
+    if (d === 0) return null;
+    return { re: (a.re*b.re + a.im*b.im)/d, im: (a.im*b.re - a.re*b.im)/d };
+  },
+  mag: z => Math.sqrt(z.re*z.re + z.im*z.im),
+  ang: z => Math.atan2(z.im, z.re) * 180 / Math.PI,
+  fromPolar: (r, deg) => ({ re: r * Math.cos(deg*Math.PI/180), im: r * Math.sin(deg*Math.PI/180) })
+};
+
+function fmt(n, d=4) {
+  if (Math.abs(n) < 1e-10) return '0';
+  return parseFloat(n.toFixed(d)).toString();
+}
+
+function cartStr(z) {
+  const re = fmt(z.re), im = fmt(Math.abs(z.im));
+  const sign = z.im < -1e-10 ? ' − ' : ' + ';
+  if (Math.abs(z.re) < 1e-10 && Math.abs(z.im) < 1e-10) return '0';
+  if (Math.abs(z.re) < 1e-10) return `${fmt(z.im)}j`;
+  if (Math.abs(z.im) < 1e-10) return re;
+  return `${re}${sign}${im}j`;
+}
+
+function polarStr(z) {
+  return `${fmt(C.mag(z))} ∠ ${fmt(C.ang(z))}°`;
+}
+
+function resultHTML(z, label='') {
+  if (!z) return `<span class="error-msg">⚠ DIVISION BY ZERO</span>`;
+  return `
+    <div class="result-row">
+      <div class="result-card">
+        <div class="result-card-label">RECTANGULAR (卡氏)</div>
+        <div class="result-value">${cartStr(z)}</div>
+        <div class="result-sub">Re = ${fmt(z.re)} &nbsp;|&nbsp; Im = ${fmt(z.im)}</div>
+      </div>
+      <div class="result-card">
+        <div class="result-card-label">POLAR (極座標)</div>
+        <div class="result-value">${polarStr(z)}</div>
+        <div class="result-sub">|Z| = ${fmt(C.mag(z))} &nbsp;|&nbsp; θ = ${fmt(C.ang(z))}°</div>
+      </div>
+    </div>`;
+}
+
+// ─── Mode switching ───────────────────────────────────────
+function setMode(m) {
+  currentMode = m;
+  document.querySelectorAll('.mode-tab').forEach((t,i) => t.classList.toggle('active', (m==='single'?0:1)===i));
+  document.getElementById('single-mode').style.display = m==='single' ? 'block' : 'none';
+  document.getElementById('dual-mode').style.display   = m==='dual'   ? 'block' : 'none';
+}
+
+function setSingleFmt(f, btn) {
+  singleFmt = f;
+  document.querySelectorAll('.fmt-toggle .fmt-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('single-cart').style.display  = f==='cart'  ? 'block' : 'none';
+  document.getElementById('single-polar').style.display = f==='polar' ? 'block' : 'none';
+}
+
+function setDualFmt(op, f) {
+  if (op==='a') {
+    dualFmtA = f;
+    document.getElementById('a-cart-btn').classList.toggle('active', f==='cart');
+    document.getElementById('a-polar-btn').classList.toggle('active', f==='polar');
+    document.getElementById('dual-a-cart').style.display  = f==='cart'  ? 'block' : 'none';
+    document.getElementById('dual-a-polar').style.display = f==='polar' ? 'block' : 'none';
+  } else {
+    dualFmtB = f;
+    document.getElementById('b-cart-btn').classList.toggle('active', f==='cart');
+    document.getElementById('b-polar-btn').classList.toggle('active', f==='polar');
+    document.getElementById('dual-b-cart').style.display  = f==='cart'  ? 'block' : 'none';
+    document.getElementById('dual-b-polar').style.display = f==='polar' ? 'block' : 'none';
+  }
+}
+
+const opMap = { '+': 'op-add', '−': 'op-sub', '×': 'op-mul', '÷': 'op-div' };
+function setOp(o) {
+  currentOp = o;
+  Object.entries(opMap).forEach(([k,v]) => document.getElementById(v).classList.toggle('active', k===o));
+}
+
+// ─── Read inputs ──────────────────────────────────────────
+function readCart(re_id, im_id) {
+  const re = parseFloat(document.getElementById(re_id).value) || 0;
+  const im = parseFloat(document.getElementById(im_id).value) || 0;
+  return { re, im };
+}
+
+function readPolar(mag_id, ang_id) {
+  const r = parseFloat(document.getElementById(mag_id).value) || 0;
+  const d = parseFloat(document.getElementById(ang_id).value) || 0;
+  return C.fromPolar(r, d);
+}
+
+// ─── Calc single ──────────────────────────────────────────
+function calcSingle() {
+  const z = singleFmt==='cart' ? readCart('s-real','s-imag') : readPolar('s-mag','s-ang');
+  const res = document.getElementById('single-result');
+  document.getElementById('single-output').innerHTML = resultHTML(z);
+  res.classList.add('visible');
+  drawDiagram('canvas-single', [{ z, color: '#00d4ff', label: 'Z' }]);
+  document.getElementById('single-diagram').classList.add('visible');
+}
+
+// ─── Calc dual ────────────────────────────────────────────
+function calcDual() {
+  const A = dualFmtA==='cart' ? readCart('a-real','a-imag') : readPolar('a-mag','a-ang');
+  const B = dualFmtB==='cart' ? readCart('b-real','b-imag') : readPolar('b-mag','b-ang');
+  let R;
+  if (currentOp==='+') R = C.add(A,B);
+  else if (currentOp==='−') R = C.sub(A,B);
+  else if (currentOp==='×') R = C.mul(A,B);
+  else R = C.div(A,B);
+  const res = document.getElementById('dual-result');
+  const symMap = { '+':'+', '−':'−', '×':'×', '÷':'÷' };
+  document.getElementById('dual-output').innerHTML =
+    `<div style="font-family:'Share Tech Mono',monospace;font-size:0.8rem;color:var(--text-dim);margin-bottom:10px;letter-spacing:1px;">
+       A = ${cartStr(A)} &nbsp;${symMap[currentOp]}&nbsp; B = ${cartStr(B)}
+     </div>` + resultHTML(R);
+  res.classList.add('visible');
+  if (R) {
+    drawDiagram('canvas-dual', [
+      { z: A, color: '#00d4ff', label: 'A' },
+      { z: B, color: '#ff6b35', label: 'B' },
+      { z: R, color: '#39ff14', label: 'R', dashed: true }
+    ]);
+    document.getElementById('dual-diagram').classList.add('visible');
+  }
+}
+
+// ─── Phasor Diagram ───────────────────────────────────────
+function drawDiagram(canvasId, vectors) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2;
+  ctx.clearRect(0,0,W,H);
+
+  // Background
+  ctx.fillStyle = 'rgba(0,0,0,0.7)';
+  ctx.fillRect(0,0,W,H);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(30,58,95,0.5)';
+  ctx.lineWidth = 1;
+  for (let x=0; x<=W; x+=40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for (let y=0; y<=H; y+=40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+  // Axes
+  ctx.strokeStyle = 'rgba(100,160,200,0.4)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(W,cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx,0); ctx.lineTo(cx,H); ctx.stroke();
+
+  // Axis labels
+  ctx.fillStyle = 'rgba(100,160,200,0.5)';
+  ctx.font = '11px Share Tech Mono';
+  ctx.fillText('Re', W-20, cy-6);
+  ctx.fillText('jIm', cx+5, 14);
+
+  // Scale
+  const allMags = vectors.map(v => C.mag(v.z)).filter(m => m>0);
+  const maxMag = allMags.length ? Math.max(...allMags) : 1;
+  const scale = (Math.min(W,H)/2 - 28) / (maxMag || 1);
+
+  vectors.forEach(({ z, color, label, dashed }) => {
+    const px = cx + z.re * scale;
+    const py = cy - z.im * scale;
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    if (dashed) { ctx.setLineDash([5,4]); } else { ctx.setLineDash([]); }
+
+    // Arrow
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(px, py);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Arrowhead
+    const ang = Math.atan2(py-cy, px-cx);
+    const al = 10;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(px, py);
+    ctx.lineTo(px - al*Math.cos(ang-0.4), py - al*Math.sin(ang-0.4));
+    ctx.lineTo(px - al*Math.cos(ang+0.4), py - al*Math.sin(ang+0.4));
+    ctx.closePath();
+    ctx.fill();
+
+    // Label
+    ctx.fillStyle = color;
+    ctx.font = 'bold 13px Share Tech Mono';
+    const lx = px + 10 * Math.cos(ang - Math.PI/2);
+    const ly = py + 10 * Math.sin(ang - Math.PI/2);
+    ctx.fillText(label, lx+4, ly-4);
+
+    // Dot at tip
+    ctx.beginPath();
+    ctx.arc(px, py, 3, 0, Math.PI*2);
+    ctx.fill();
+  });
+
+  // Origin dot
+  ctx.fillStyle = 'rgba(200,216,232,0.4)';
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3, 0, Math.PI*2);
+  ctx.fill();
+}
+
+// Enter key support
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    if (currentMode==='single') calcSingle();
+    else calcDual();
+  }
+});
+</script>
+</body>
+</html>
